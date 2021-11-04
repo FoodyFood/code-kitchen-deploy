@@ -17,6 +17,16 @@ This repository contains the deployment scripts and config.
 <b>Dont forget to keep your config repo private, it likely contains secrets</b>
 
 
+### Repositories In The Series
+
+This series of repositories brings you from creating a cluster through to hsoting code-kitchen yourself as well as anything else you can dream of building in code-kitchen.
+
+Make your own cluster: [personal-cluster](https://github.com/FoodyFood/personal-cluster)
+Configure the cluster: [personal-cluster-base-config](https://github.com/FoodyFood/personal-cluster-base-config)
+Build code-kitchen: [code-kitchen-build](https://github.com/FoodyFood/code-kitchen-build)
+Deploy code-kitchen to your cluster: [code-kitchen-deploy](https://github.com/FoodyFood/code-kitchen-deploy)
+
+
 ### Installing Code Kitchen
 
 First we need to make it point to your builds and your GitHub account.
