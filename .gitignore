@@ -1,0 +1,4 @@
+deploy/jupyterhub
+deploy/keycloak/keycloak*
+deploy/keycloak/kc-admin
+deploy/code-kitchen/jh-values-amended.yaml

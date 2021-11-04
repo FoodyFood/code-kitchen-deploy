@@ -1,0 +1,183 @@
+# Name of the secret used to access GHCR
+imagePullSecrets: [ gh-container-registry-secret ]
+
+# Defines the connection from the outside world 
+ingress:
+  enabled: true
+  hosts:
+    - code-kitchen-url
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 128k
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    kubernetes.io/tls-acme: "true"
+    acme.cert-manager.io/http01-edit-in-place: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.org/websocket-services: proxy-public
+  tls:
+    - hosts:
+        - code-kitchen-url
+      secretName: "code-kitchen-ingress-cert"
+
+
+# How JupyterHub Proxy talks to containers
+proxy:
+  chp:
+    extraCommandLineFlags:
+    - "--no-include-prefix"
+  secretToken: secret-token # TODO: Fill with the result of `openssl rand -hex 32`
+
+
+# Affects the end users VSCode environment 
+singleuser:
+  # Use the code-server image as default, add other profiles below
+  image:
+    name: "ghcr.io/<github-username>/code-kitchen-coder"
+    tag: "code-kitchen-coder-default-tag"
+
+  # Here will be a list fo the images specified in the config
+  profileList:
+
+
+  # Provisions for the environment(s)
+  memory:
+    limit: 2G
+    guarantee: 512M
+  cpu:
+    limit: 4
+    guarantee: 0.1
+  storage:
+    capacity: 10Gi
+    dynamic:
+      storageClass: "linode-block-storage-retain"
+    homeMountPath: "/home/coder"
+
+  # Possibly broken, is supposed to handle shutting down idle pods
+  extraFiles:
+    jupyter_notebook_config.json:
+      mountPath: /etc/jupyter/jupyter_notebook_config.json
+      data:
+        MappingKernelManager:
+          cull_idle_timeout: 86400 # default: 0; 86400 == 1d
+          cull_interval: 120 # Each 2 mins check
+        NotebookApp:
+          shutdown_no_activity_timeout: 604800 # 604800 == 7d
+
+
+# To help with autoscaling
+scheduling:
+  podPriority:
+    enabled: true
+    globalDefault: false
+  userScheduler:
+    enabled: user-scheduler
+  userPlaceholder:
+    enabled: user-placeholder
+    replicas: 1
+
+
+# Reserve enough resources for the pre-puller
+prePuller:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 8Mi
+  hook:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 8Mi
+
+ 
+# Config for code-kitchen-hub, the dashboard you log into
+hub:
+  image:
+    name: "ghcr.io/<github-username>/code-kitchen-hub"
+    tag:  "code-kitchen-hub-image-tag"
+    
+  # Connect to an OIDC providor and elect admins
+  config:
+    GenericOAuthenticator:
+      client_id: code-kitchen
+      client_secret: <secret-goes-here>
+      oauth_callback_url: https://code-kitchen-url/hub/oauth_callback
+      authorize_url: https://sso.example.com/auth/realms/code-kitchen/protocol/openid-connect/auth
+      token_url: https://sso.example.com/auth/realms/code-kitchen/protocol/openid-connect/token
+      userdata_url: https://sso.example.com/auth/realms/code-kitchen/protocol/openid-connect/userinfo
+      login_service: Code Kitchen
+      username_key: preferred_username
+      userdata_params:
+        state: state
+    JupyterHub:
+      authenticator_class: generic-oauth
+    Authenticator:
+      admin_users: ['']
+
+  # These are read as raw python, and in executed in alphebetical order (hense numbers)
+  extraConfig: 
+    0_branding.py: |
+      c.JupyterHub.logo_file = '/code-kitchen/branding/logo.png'
+      c.KubeSpawner.pod_name_template = 'code-kitchen-{username}-{servername}'
+
+    1_hub.py: |
+      c.JupyterHub.redirect_to_server = False
+      # c.Authenticator.auto_login = True # Skips 'login with x' page, goes straight to login/home (if logged in)
+      # c.Authenticator.enable_auth_state = True
+      # c.JupyterHub.shutdown_on_logout = True # Will kill even if they are still logged in elsewhere
+      c.Spawner.http_timeout = 150
+      c.Spawner.start_timeout = 150
+      c.JupyterHub.allow_named_servers = True
+      c.JupyterHub.named_server_limit_per_user = 3
+      c.JupyterHub.admin_access = True
+    
+    2_code_spawner.py: |
+      from kubespawner.spawner import KubeSpawner
+      from jupyterhub.spawner import _quote_safe
+
+      class VSCodeKubeSpawner(KubeSpawner):
+          def get_args(self):
+              """Custom args function for the coder"""
+
+              # Turn off authentication (happens via jupyterhub)
+              args = ["--auth", "none"]
+              # Turn off telemetry
+              args += ["--disable-telemetry"]
+
+              # set port and ip if given
+              ip = "0.0.0.0"
+              if self.ip:
+                  ip = _quote_safe(self.ip)
+
+              port = 8888
+              if self.port:
+                  port = self.port
+              elif self.server and self.server.port:
+                  self.log.warning(
+                      "Setting port from user.server is deprecated as of JupyterHub 0.7."
+                  )
+                  port = self.server.port
+
+              args += ["--bind-addr", f"{ip}:{port}"]
+
+              # set startup folder
+              if self.notebook_dir:
+                  notebook_dir = self.format_string(self.notebook_dir)
+                  args += ["--user-data-dir", _quote_safe(notebook_dir)]
+
+              if self.debug:
+                  args += ["-vvv"]
+
+              args.extend(self.args)
+              return args
+
+      # Use the configured spawner
+      c.JupyterHub.spawner_class = VSCodeKubeSpawner
+
+    3_code_settings.py: |
+      # The working dir is by default set to
+      # /home/coder in the VSCode image
+      c.VSCodeKubeSpawner.working_dir = "/home/coder"
+
+      # By default, the cmd includes the call to "jupyterhub-singleserver"
+      # However, the docker image already comes with the correct
+      # VSCode command to call, so we just set it to an empty string here
+      c.VSCodeKubeSpawner.cmd = ""

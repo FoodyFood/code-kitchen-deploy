@@ -1,0 +1,27 @@
+cluster:
+  namespace:  code-kitchen
+  url: code-kitchen.example.com
+
+admins: ["foodyfood"]
+
+jhChartVersion: '1.1.3'
+
+user:
+  scheduler: true
+  placeholder: true
+
+hub:
+  imageTag: '1.1.3-0'
+
+profile:
+  - name: "Cloud and Web Dev Environment"
+    imageTag: "3.12.0-0"
+    description: "A VS Code environment with lots of extra useful stuff"
+    
+  - name: "Web Dev Learning Environment"
+    imageTag: "learning-3.12.0-0"
+    description: "A VS Code environment for learning to make websites"
+
+  - name: "Standard VS Code Environment"
+    imageTag: "3.12.0"
+    description: "A standard VS Code environment without any extras"

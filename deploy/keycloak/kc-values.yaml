@@ -1,0 +1,20 @@
+ingress:
+  enabled: true
+  servicePort: http
+  annotations: 
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 128k
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    kubernetes.io/tls-acme: "true"
+    acme.cert-manager.io/http01-edit-in-place: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  labels: {}
+  rules:
+    -
+      host: 'sso.example.com'
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - sso.example.com
+      secretName: "sso-ingress-cert"
