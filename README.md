@@ -71,7 +71,7 @@ Currently there is only 1 image type to choose from
 ### The Workspace
 An example of what a client will see when they are using Code Kitchen
 
-![coder](docs/workspace.png)
+![coder](docs/workspace.PNG)
 
 <br>
 
