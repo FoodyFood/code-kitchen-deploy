@@ -1,6 +1,7 @@
 cluster:
+  context: lke42143-ctx
   namespace:  code-kitchen
-  url: code-kitchen.example.com
+  url: code-kitchen.foodyfood.cloud
 
 admins: ["foodyfood"]
 
@@ -15,11 +16,11 @@ hub:
 
 profile:
   - name: "Cloud and Web Dev Environment"
-    imageTag: "3.12.0-0"
+    imageTag: "3.12.0-1"
     description: "A VS Code environment with lots of extra useful stuff"
     
   - name: "Web Dev Learning Environment"
-    imageTag: "learning-3.12.0-0"
+    imageTag: "learning-3.12.0-2"
     description: "A VS Code environment for learning to make websites"
 
   - name: "Standard VS Code Environment"

@@ -22,7 +22,7 @@ url=`yq e '.cluster.url' ${config_file}`
 
 
 # Make sure we're deploying to the correct cluster
-kubectl config use-context lke41595-ctx
+kubectl config use-context `yq e '.cluster.context' ${config_file}`
 
 
 # Create a file we can edit without touching the original
