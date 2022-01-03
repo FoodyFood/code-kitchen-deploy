@@ -4,10 +4,13 @@ kcAdmin=`cat kc-admin`
 
 # Log kcadm into a server
 kcAdmin=`cat kc-admin`
-./keycloak/bin/kcadm.sh config credentials --server https://sso.example.com/auth --realm master --user code-kitchen-admin --password "$kcAdmin"
+./keycloak/bin/kcadm.sh config credentials --server https://sso.foodyfood.cloud/auth --realm master --user code-kitchen-admin --password "$kcAdmin"
 
 # Create a client under a realm, need the realm created first
 ./keycloak/bin/kcadm.sh create clients -r code-kitchen -s clientId=code-kitchen -s enabled=true -s clientAuthenticatorType=client-secret -s secret=<big-secret>
 
 # Valid redirect url
 https://code-kitchen.example.com/*
+
+# If you forget the secret, you can find it in the KC UI
+# Client - > Credentials 
